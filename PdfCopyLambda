@@ -1,0 +1,35 @@
+import json
+import boto3
+
+
+    # TODO implement
+   
+session = boto3.Session(
+    aws_access_key_id='AKIA5QEZCHC5BNITTCXG',
+    aws_secret_access_key='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',
+    region_name="us-east-1")
+
+def lambda_handler(event, context):
+
+    #Creating S3 Resource From the Session.
+    s3 = session.resource('s3')
+    srcbucket = s3.Bucket('bckett1')
+    destbucket = s3.Bucket('pdfcount')
+    #for file in srcbucket.objects.all():
+    
+    #Create a Soucre Dictionary That Specifies Bucket Name and Key Name of the Object to Be Copied
+    copy_source = {
+    'Bucket': 'bckett1',
+    'Key': 'aws.pdf'
+    }
+    for i in range(500):
+        name = 'set' + str(i) + '.pdf'
+        
+        destbucket.copy(copy_source, name)#copy_source['Key'])
+        
+        #to delete the file after copying  
+    return {
+        'statusCode': 200,
+        'body': json.dumps('REcords are insertd successfully')
+        
+    }
