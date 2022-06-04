@@ -1,0 +1,41 @@
+import boto3
+import math
+import json
+import uuid
+from PyPDF2 import PdfFileReader
+from io import BytesIO
+import re
+import time
+start = time.time()
+session = boto3.Session(
+    aws_access_key_id='AKIA5QEZCHC5BNITTCXG',
+    aws_secret_access_key='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',
+    region_name="us-east-1")
+
+
+def lambda_handler(event, context):
+    records = event["Records"]
+    s3 = boto3.resource('s3')
+    pdf_bucket = s3.Bucket('bckett1')
+
+    for record in records:
+        messageBody = record['body']
+        jsonBody = json.loads(messageBody)
+        pdfKey = jsonBody.get("pdfUrl")
+        obj = s3.Object("bckett1", pdfKey)
+        fs = obj.get()['Body'].read()
+        pdf = PdfFileReader(BytesIO(fs))
+        no_page = len(pdf.pages)
+        print(f"no_pages in {pdfKey} are {no_page}")
+        x = ""
+        for i in range( no_page):
+            pageObj =  pdf.pages[i]
+            #x = x + 
+            print(pageObj.extract_text())
+        res = len(re.findall(r'\w+', x))
+        print("The number of words in", pdfKey, "are : " + str(res))
+        print("The number of Characters in", pdfKey, " are : ", len(x))
+        x = ""
+print("Done")
+end = time.time()
+print("The time of execution of above program is :", end-start)
