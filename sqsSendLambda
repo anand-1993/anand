@@ -1,0 +1,65 @@
+import boto3
+import math
+import json
+import uuid
+
+session = boto3.Session( 
+         aws_access_key_id='AKIA5QEZCHC5BNITTCXG', 
+         aws_secret_access_key='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',
+         region_name = "us-east-1" )
+
+def send_message(entries,queue):
+    try:
+        response = queue.send_messages(Entries=entries)
+        if 'Successful' in response:
+            return True
+        else:
+            return False
+            
+    except Exception as e:
+        #raise fail event here...
+        # 
+        print('Exception: ' + str(e))
+        print("Error while adding messages into SQS.")
+        return False
+
+def create_Message(record):
+
+    message = {}
+    message["pdfUrl"] = record.key
+    messageBody = json.dumps(message)    
+    messageJson = {
+        'Id': uuid.uuid4().hex,
+        'MessageBody': messageBody,
+    } 
+    return messageJson
+
+def divide_records_into_chunks(records,size):
+    recordSets = [records[i * size:(i + 1) * size] for i in range((len(records) + size - 1) // size )]  
+    return recordSets
+
+#Then use the session to get the resource
+def lambda_handler(event, context):
+
+    s3 = session.resource('s3')
+    pdf_bucket = s3.Bucket('bckett1')
+
+    sqs = session.resource('sqs')
+    queue = sqs.Queue("https://sqs.us-east-1.amazonaws.com/928033945786/pdfinsert")
+
+    listItems = list(pdf_bucket.objects.all())
+
+    recordSets = divide_records_into_chunks(listItems,10)
+
+    for recordGroup in recordSets:
+        entries = []
+        for record in recordGroup:
+            message = create_Message(record)
+            entries.append(message)
+        
+        response = send_message(entries,queue)
+        
+        if response == False:
+            print("Insert into SQS failed")
+        else:
+            print("Batch Record is inserted properly")
